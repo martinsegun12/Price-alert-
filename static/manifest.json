@@ -1,0 +1,14 @@
+{
+  "name": "POI Alert — Forex",
+  "short_name": "POIAlert",
+  "description": "Real-time Forex POI price alert tool",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090c12",
+  "theme_color": "#00d4aa",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
