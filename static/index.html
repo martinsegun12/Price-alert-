@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#00d4aa"/>
+  <title>POI Alert</title>
+  <link rel="manifest" href="/static/manifest.json"/>
+  <link rel="apple-touch-icon" href="/static/icon-192.png"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+    :root {
+      --bg:#090c12; --surface:#111827; --border:#1e2d40;
+      --accent:#00d4aa; --danger:#ef4444; --buy:#10b981;
+      --sell:#f43f5e; --text:#e2e8f0; --muted:#64748b;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 14px 40px;display:flex;flex-direction:column;align-items:center}
+    header{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .logo{display:flex;align-items:center;gap:9px}
+    .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+    .logo h1{font-size:17px;font-weight:700}.logo h1 span{color:var(--accent)}
+    .badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:3px 9px;border-radius:20px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:480px;margin-bottom:12px}
+    .card-title{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+    label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px}
+    input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px 13px;font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;margin-bottom:12px}
+    input:focus,select:focus{border-color:var(--accent)}
+    input::placeholder{color:var(--muted)}
+    select option{background:var(--surface)}
+    .mono{font-family:'JetBrains Mono',monospace}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{width:100%;padding:13px;border-radius:10px;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+    .btn-start{background:var(--accent);color:#090c12;margin-top:4px}
+    .btn-start:hover{opacity:0.88}
+    .btn-stop{background:var(--danger);color:#fff;margin-top:8px}
+    .btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent);margin-top:8px}
+    .price-big{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--accent);letter-spacing:-0.02em;line-height:1}
+    .price-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px}
+    .price-sub{font-size:12px;color:var(--muted);margin-bottom:5px}
+    .change{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600}
+    .change.up{color:var(--buy)}.change.down{color:var(--sell)}
+    .updated{font-size:11px;color:var(--muted);margin-top:3px}
+    .source-tag{font-size:10px;color:var(--accent);margin-top:2px}
+    .distance-wrap{margin-top:14px}
+    .distance-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+    .distance-label span:last-child{font-family:'JetBrains Mono',monospace;color:var(--text)}
+    .track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+    .fill{height:100%;border-radius:3px;transition:width 0.5s ease,background 0.3s}
+    .status{display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:8px;font-size:13px;font-weight:500;margin-top:14px}
+    .status.idle{background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.2);color:var(--muted)}
+    .status.watching{background:rgba(0,212,170,0.07);border:1px solid rgba(0,212,170,0.3);color:var(--accent)}
+    .status.triggered{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);color:var(--danger);animation:flicker 1s infinite}
+    @keyframes flicker{0%,100%{opacity:1}50%{opacity:0.5}}
+    .sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .status.idle .sdot{background:var(--muted)}
+    .status.watching .sdot{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1.5s infinite}
+    .status.triggered .sdot{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+    .poi-line{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-top:10px;font-size:13px}
+    .poi-line span:first-child{color:var(--muted)}
+    .poi-line span:last-child{font-family:'JetBrains Mono',monospace;color:#f59e0b;font-weight:700}
+    .info-box{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:9px;padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px}
+    .notif-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin-top:8px}
+    .notif-status.ok{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--buy)}
+    .notif-status.err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger)}
+    .notif-status.pending{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b}
+    .log-list{list-style:none;display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto}
+    .log-item{display:flex;gap:9px;padding:9px 11px;border-radius:7px;background:var(--bg);border:1px solid var(--border);font-size:12px}
+    .log-t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;margin-top:1px}
+    .log-m{color:var(--text);line-height:1.4}
+    .empty{text-align:center;color:var(--muted);font-size:13px;padding:18px}
+    .reconnect-banner{display:none;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--accent);margin-bottom:12px;width:100%;max-width:480px;text-align:center}
+    .install-banner{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:9px;padding:12px 14px;font-size:12px;color:#f59e0b;margin-bottom:12px;width:100%;max-width:480px;display:none;text-align:center}
+  </style>
+</head>
+<body>
+
+<!-- Install banner -->
+<div class="install-banner" id="install-banner">
+  📲 Add to Home Screen for best experience — tap browser menu → "Add to Home Screen"
+</div>
+
+<!-- Reconnect banner -->
+<div class="reconnect-banner" id="reconnect-banner">
+  🔄 Reconnected — your alert is still active on the server
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <h1>POI<span>Alert</span></h1>
+  </div>
+  <div class="badge" id="header-badge">PWA + Firebase</div>
+</header>
+
+<!-- NOTIFICATIONS -->
+<div class="card">
+  <div class="card-title">🔔 Push Notifications</div>
+  <div class="info-box">
+    Allow notifications below — when your POI is hit you get a <strong style="color:var(--accent)">direct push notification</strong> on your Redmi even when the app is closed.
+  </div>
+  <button class="btn btn-outline" id="notif-btn" onclick="requestNotifPermission()">Enable Push Notifications</button>
+  <div class="notif-status pending" id="notif-status">
+    ⏳ Notifications not yet enabled
+  </div>
+</div>
+
+<!-- ALERT SETUP -->
+<div class="card">
+  <div class="card-title">Set POI Alert</div>
+  <div class="row">
+    <div>
+      <label>Pair / Instrument</label>
+      <select id="pair-select" onchange="pairChange()">
+        <optgroup label="── Forex ──">
+          <option value="EUR/USD">EUR/USD</option>
+          <option value="GBP/USD">GBP/USD</option>
+          <option value="USD/JPY">USD/JPY</option>
+          <option value="USD/CHF">USD/CHF</option>
+          <option value="AUD/USD">AUD/USD</option>
+          <option value="USD/CAD">USD/CAD</option>
+          <option value="NZD/USD">NZD/USD</option>
+          <option value="EUR/GBP">EUR/GBP</option>
+          <option value="EUR/JPY">EUR/JPY</option>
+          <option value="GBP/JPY">GBP/JPY</option>
+        </optgroup>
+        <optgroup label="── Commodities ──">
+          <option value="XAU/USD">XAU/USD (Gold)</option>
+          <option value="XAG/USD">XAG/USD (Silver)</option>
+        </optgroup>
+        <optgroup label="── Indices ──">
+          <option value="SPX">SPX (S&P 500)</option>
+          <option value="NAS100">NAS100 (Nasdaq)</option>
+          <option value="US30">US30 (Dow Jones)</option>
+          <option value="GER40">GER40 (DAX)</option>
+          <option value="UK100">UK100 (FTSE)</option>
+          <option value="JP225">JP225 (Nikkei)</option>
+        </optgroup>
+        <optgroup label="── Other ──">
+          <option value="custom">Custom...</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="custom-wrap" style="display:none;">
+      <label>Custom Pair</label>
+      <input type="text" id="custom-pair" placeholder="USD/SGD" style="text-transform:uppercase"/>
+    </div>
+  </div>
+
+  <label>POI Price — alert when price TOUCHES this level</label>
+  <input type="number" id="target" class="mono" placeholder="e.g. 1.31500" step="0.00001"/>
+
+  <label>Pip Tolerance</label>
+  <select id="tolerance">
+    <option value="2">2 pips — very tight</option>
+    <option value="5" selected>5 pips — recommended</option>
+    <option value="10">10 pips — wider zone</option>
+    <option value="20">20 pips — zone alert</option>
+  </select>
+
+  <button class="btn btn-start" id="start-btn" onclick="startAlert()">▶ Start Watching POI</button>
+  <button class="btn btn-stop" id="stop-btn" onclick="stopAlert()" style="display:none;">■ Stop Alert</button>
+</div>
+
+<!-- LIVE PRICE -->
+<div class="card">
+  <div class="card-title">Live Price</div>
+  <div class="price-row">
+    <div>
+      <div class="price-sub" id="live-pair">— / —</div>
+      <div class="price-big" id="live-price">—.—</div>
+    </div>
+    <div style="text-align:right">
+      <div class="change" id="live-change">—</div>
+      <div class="updated" id="live-updated">Not polling</div>
+      <div class="source-tag" id="live-source"></div>
+    </div>
+  </div>
+  <div class="poi-line" id="poi-line" style="display:none;">
+    <span>🎯 POI Target</span>
+    <span id="target-display">—</span>
+  </div>
+  <div class="distance-wrap" id="distance-wrap" style="display:none;">
+    <div class="distance-label">
+      <span>Distance to POI</span>
+      <span id="distance-text">—</span>
+    </div>
+    <div class="track"><div class="fill" id="distance-fill" style="width:0%;background:var(--accent)"></div></div>
+  </div>
+  <div class="status idle" id="status-bar">
+    <div class="sdot"></div>
+    <span id="status-text">Idle — set your POI to begin</span>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="card">
+  <div class="card-title">Activity Log</div>
+  <ul class="log-list" id="log-list">
+    <li class="empty">No activity yet</li>
+  </ul>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+
+  // ── Firebase config (filled from server) ──────────────────────────────────
+  let firebaseConfig = null;
+  let messaging = null;
+  let fcmToken = null;
+
+  async function initFirebase() {
+    try {
+      const res = await fetch('/api/firebase-config');
+      firebaseConfig = await res.json();
+      if (!firebaseConfig.apiKey) throw new Error('No Firebase config');
+
+      const app = initializeApp(firebaseConfig);
+      messaging = getMessaging(app);
+
+      // Handle foreground messages
+      onMessage(messaging, (payload) => {
+        console.log('Foreground message:', payload);
+        showInAppNotification(payload.notification?.title, payload.notification?.body);
+      });
+
+      // Check if already have permission
+      if (Notification.permission === 'granted') {
+        await getFCMToken();
+      }
+
+    } catch(e) {
+      console.warn('Firebase init failed:', e);
+      // Fall back to ntfy/server notification only
+    }
+  }
+
+  async function getFCMToken() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const vapidKey = firebaseConfig.vapidKey;
+      fcmToken = await getToken(messaging, { vapidKey, serviceWorkerRegistration: reg });
+      if (fcmToken) {
+        window._fcmToken = fcmToken;
+        await fetch('/api/register-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: fcmToken })
+        });
+        updateNotifStatus('ok', '✅ Push notifications enabled — you will be alerted when app is closed');
+        document.getElementById('notif-btn').style.display = 'none';
+      }
+    } catch(e) {
+      console.warn('FCM token error:', e);
+      updateNotifStatus('err', '❌ Could not get notification token — try refreshing');
+    }
+  }
+
+  window.requestNotifPermission = async function() {
+    if (!messaging) {
+      // Fallback: use browser Notification API directly
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        updateNotifStatus('ok', '✅ Browser notifications enabled');
+        document.getElementById('notif-btn').style.display = 'none';
+      }
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      await getFCMToken();
+    } else {
+      updateNotifStatus('err', '❌ Permission denied — please allow notifications in Chrome settings');
+    }
+  };
+
+  function showInAppNotification(title, body) {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:9999;text-align:center;max-width:90vw;box-shadow:0 4px 20px rgba(239,68,68,0.5)';
+    div.innerHTML = `🚨 ${title}<br><span style="font-weight:400;font-size:12px">${body}</span>`;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 8000);
+  }
+
+  initFirebase();
+</script>
+
+<script>
+  // ── Register service worker ────────────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').then(reg => {
+      console.log('SW registered:', reg.scope);
+    }).catch(e => console.warn('SW failed:', e));
+  }
+
+  // ── PWA install prompt ─────────────────────────────────────────────────────
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').style.display = 'block';
+  });
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let pollTimer = null;
+  let lastPrice = null;
+
+  function updateNotifStatus(type, msg) {
+    const el = document.getElementById('notif-status');
+    el.className = 'notif-status ' + type;
+    el.textContent = msg;
+  }
+
+  // ── On load: check server for active alert ─────────────────────────────────
+  window.addEventListener('load', async () => {
+    // Check notification permission
+    if (Notification.permission === 'granted') {
+      updateNotifStatus('ok', '✅ Push notifications enabled');
+      document.getElementById('notif-btn').style.display = 'none';
+    } else if (Notification.permission === 'denied') {
+      updateNotifStatus('err', '❌ Notifications blocked — enable in Chrome settings → Site Settings');
+    }
+
+    // Reconnect to active alert
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      if (data.active && data.pair && data.target) {
+        showWatchingUI(data.pair, data.target);
+        document.getElementById('reconnect-banner').style.display = 'block';
+        setTimeout(() => document.getElementById('reconnect-banner').style.display = 'none', 4000);
+        pollTimer = setInterval(pollStatus, 10000);
+        pollStatus();
+      }
+    } catch(e) { console.warn('Status check failed:', e); }
+  });
+
+  function pairChange() {
+    const v = document.getElementById('pair-select').value;
+    document.getElementById('custom-wrap').style.display = v === 'custom' ? 'block' : 'none';
+  }
+
+  function getActivePair() {
+    const v = document.getElementById('pair-select').value;
+    if (v === 'custom') return document.getElementById('custom-pair').value.trim().toUpperCase();
+    return v;
+  }
+
+  async function startAlert() {
+    const pair = getActivePair();
+    const target = parseFloat(document.getElementById('target').value);
+    const tolerance = parseInt(document.getElementById('tolerance').value);
+
+    if (!pair) return alert('Please select a currency pair');
+    if (isNaN(target)) return alert('Please enter a valid target price');
+    if (Notification.permission !== 'granted') {
+      alert('Please enable push notifications first!');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pair, target,
+          tolerance_pips: tolerance,
+          fcm_token: window._fcmToken || null
+        })
+      });
+      const data = await res.json();
+      if (data.error) { alert('Error: ' + data.error); return; }
+
+      showWatchingUI(pair, target);
+      pollTimer = setInterval(pollStatus, 10000);
+      pollStatus();
+
+    } catch(e) { alert('Could not connect to server: ' + e.message); }
+  }
+
+  function showWatchingUI(pair, target) {
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('stop-btn').style.display = 'block';
+    document.getElementById('poi-line').style.display = 'flex';
+    document.getElementById('distance-wrap').style.display = 'block';
+    document.getElementById('target-display').textContent = target;
+    document.getElementById('live-pair').textContent = pair;
+    setStatus('watching', `Watching ${pair} — alert when price touches ${target}`);
+  }
+
+  async function stopAlert() {
+    await fetch('/api/stop', { method: 'POST' });
+    clearInterval(pollTimer);
+    document.getElementById('start-btn').style.display = 'block';
+    document.getElementById('stop-btn').style.display = 'none';
+    document.getElementById('poi-line').style.display = 'none';
+    document.getElementById('distance-wrap').style.display = 'none';
+    setStatus('idle', 'Stopped — set a new POI to continue');
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+
+      if (data.current_price !== null && data.current_price !== undefined) {
+        const price = data.current_price;
+        const prev = lastPrice;
+        lastPrice = price;
+
+        document.getElementById('live-pair').textContent = data.pair || '—';
+        document.getElementById('live-price').textContent = formatPrice(data.pair, price);
+        document.getElementById('live-updated').textContent = 'Updated ' + (data.last_updated || '');
+        document.getElementById('live-source').textContent = data.source ? '⚡ ' + data.source : '';
+
+        if (prev !== null) {
+          const change = price - prev;
+          const el = document.getElementById('live-change');
+          el.textContent = (change >= 0 ? '+' : '') + change.toFixed(5);
+          el.className = 'change ' + (change >= 0 ? 'up' : 'down');
+        }
+
+        if (data.target) {
+          const pip = data.pair && data.pair.includes('JPY') ? 0.01 : 0.0001;
+          const diffPips = Math.abs(price - data.target) / pip;
+          const maxPips = 50;
+          const pct = Math.max(0, Math.min(100, 100 - (diffPips / maxPips * 100)));
+          document.getElementById('distance-fill').style.width = pct + '%';
+          document.getElementById('distance-fill').style.background =
+            pct > 80 ? 'var(--danger)' : pct > 50 ? '#f59e0b' : 'var(--accent)';
+          document.getElementById('distance-text').textContent = diffPips.toFixed(1) + ' pips away';
+        }
+      }
+
+      if (data.triggered) {
+        setStatus('triggered', '🚨 POI TOUCHED! Check your notifications');
+        clearInterval(pollTimer);
+        document.getElementById('start-btn').style.display = 'block';
+        document.getElementById('stop-btn').style.display = 'none';
+        // Also show in-app alert
+        if (typeof showInAppNotification === 'function') {
+          showInAppNotification('POI HIT!', `${data.pair} touched your level of ${data.target}`);
+        }
+      }
+
+      if (data.log && data.log.length > 0) {
+        const list = document.getElementById('log-list');
+        list.innerHTML = '';
+        data.log.forEach(entry => {
+          const li = document.createElement('li');
+          li.className = 'log-item';
+          li.innerHTML = `<span class="log-t">${entry.time}</span><span class="log-m">${entry.msg}</span>`;
+          list.appendChild(li);
+        });
+      }
+
+    } catch(e) { console.warn('Poll error:', e); }
+  }
+
+  function setStatus(state, text) {
+    const bar = document.getElementById('status-bar');
+    bar.className = 'status ' + state;
+    document.getElementById('status-text').textContent = text;
+  }
+
+  function formatPrice(pair, price) {
+    if (!pair) return price.toFixed(5);
+    if (pair.includes('JPY')) return price.toFixed(3);
+    if (['XAU','SPX','US30','NAS','GER','UK1'].some(x => pair.includes(x))) return price.toFixed(2);
+    return price.toFixed(5);
+  }
+</script>
+</body>
+</html>
